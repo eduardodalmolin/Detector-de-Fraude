@@ -1,0 +1,12 @@
+# Dados e modelos pesados (não versionar)
+data/*.csv
+models/*.joblib
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+.DS_Store
+.idea/
+.vscode/
