@@ -11,10 +11,10 @@ SCALE_COLS = ["Time", "Amount"]
 
 
 class IsolationForestClassifier(ClassifierMixin, BaseEstimator):
-    """Adapta o Isolation Forest (não supervisionado) à interface de classificador.
+    """Adapta o Isolation Forest à interface de classificador.
 
-    A taxa de fraude do treino define a `contamination`. O score de anomalia é
-    normalizado para [0, 1] e exposto em `predict_proba`.
+    Utiliza scores brutos de anomalia, em que valores maiores indicam
+    maior probabilidade de uma observação ser anômala.
     """
 
     def __init__(self, n_estimators=200, contamination=0.002, random_state=42, n_jobs=-1):
@@ -26,24 +26,23 @@ class IsolationForestClassifier(ClassifierMixin, BaseEstimator):
     def fit(self, X, y=None):
         cont = float(np.mean(y)) if y is not None else self.contamination
         cont = min(max(cont, 1e-4), 0.5)
+
         self.model_ = IsolationForest(
             n_estimators=self.n_estimators,
             contamination=cont,
             random_state=self.random_state,
             n_jobs=self.n_jobs,
         ).fit(X)
-        scores = -self.model_.score_samples(X)
-        self.lo_, self.hi_ = scores.min(), scores.max()
+
         self.classes_ = np.array([0, 1])
         return self
 
-    def predict_proba(self, X):
-        s = -self.model_.score_samples(X)
-        s = np.clip((s - self.lo_) / (self.hi_ - self.lo_ + 1e-12), 0, 1)
-        return np.column_stack([1 - s, s])
+    def decision_function(self, X):
+        return -self.model_.score_samples(X)
 
     def predict(self, X):
-        return (self.model_.predict(X) == -1).astype(int)
+        threshold = -self.model_.offset_
+        return (self.decision_function(X) > threshold).astype(int)
 
 
 def _pipeline(estimator) -> Pipeline:
