@@ -1,0 +1,4 @@
+model,cv_precision,cv_recall,cv_f1,cv_pr_auc,test_precision,test_recall,test_f1,test_pr_auc,test_roc_auc
+Logistic Regression,0.063,0.9138,0.1178,0.7567,0.0609,0.9184,0.1142,0.7175,0.972
+Random Forest,0.8866,0.764,0.8198,0.8244,0.8333,0.8163,0.8247,0.8169,0.9678
+Isolation Forest,0.2381,0.2412,0.2391,0.1404,0.0747,0.7143,0.1353,0.1558,0.956
