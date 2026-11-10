@@ -25,6 +25,20 @@ def compute_metrics(y_true, y_score, threshold: float = 0.5) -> dict:
         "roc_auc": roc_auc_score(y_true, y_score),
     }
 
+def find_best_threshold(y_true, y_score):
+    precision, recall, thresholds = precision_recall_curve(y_true, y_score)
+
+    if len(thresholds) == 0:
+        raise ValueError("Não foi possível calcular thresholds.")
+
+    precision = precision[:-1]
+    recall = recall[:-1]
+
+    f1_scores = 2 * (precision * recall) / (precision + recall + 1e-12)
+
+    best_idx = np.argmax(f1_scores)
+
+    return float(thresholds[best_idx]), float(f1_scores[best_idx])
 
 def plot_confusion(y_true, y_score, title, path, threshold: float = 0.5):
     y_pred = (np.asarray(y_score) >= threshold).astype(int)
