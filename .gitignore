@@ -10,3 +10,12 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+# Resultados gerados pelo pipeline
+results/*.png
+results/test_scores.csv
+results/_tmp_*
+# Modelos em subdiretórios
+models/**/*.joblib
+# Resultados em subdiretórios
+results/**/*.png
+results/**/test_scores.csv

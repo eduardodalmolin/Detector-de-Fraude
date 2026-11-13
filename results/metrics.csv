@@ -1,0 +1,4 @@
+model,threshold,validation_precision,validation_recall,validation_f1,validation_pr_auc,validation_roc_auc,test_precision,test_recall,test_f1,test_pr_auc,test_roc_auc
+Logistic Regression,1.0,0.8663,0.7563,0.8076,0.7435,0.9816,0.8298,0.7959,0.8125,0.7175,0.972
+Random Forest,0.4597,0.8847,0.7792,0.8286,0.8217,0.9702,0.8163,0.8163,0.8163,0.8169,0.9678
+Isolation Forest,0.665,0.2886,0.2183,0.2486,0.131,0.9453,0.2976,0.2551,0.2747,0.1558,0.956

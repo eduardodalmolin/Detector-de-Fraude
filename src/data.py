@@ -35,3 +35,32 @@ def subsample(df: pd.DataFrame, ratio: int = 20, seed: int = 42) -> pd.DataFrame
 def holdout_split(X, y, test_size: float = 0.2, seed: int = 42):
     """Holdout estratificado (mantém a proporção de fraudes em treino e teste)."""
     return train_test_split(X, y, test_size=test_size, stratify=y, random_state=seed)
+
+
+def independent_validation_split(X, y, seed=42):
+
+    X_dev, X_test, y_dev, y_test = train_test_split(
+        X, y,
+        test_size=0.2,
+        stratify=y,
+        random_state=seed,
+    )
+
+    X_train, X_temp, y_train, y_temp = train_test_split(
+        X_dev, y_dev,
+        test_size=0.25,
+        stratify=y_dev,
+        random_state=seed,
+    )
+
+    X_cal, X_val, y_cal, y_val = train_test_split(
+        X_temp, y_temp,
+        test_size=0.5,
+        stratify=y_temp,
+        random_state=seed,
+    )
+
+    return (
+        X_train, X_cal, X_val, X_test,
+        y_train, y_cal, y_val, y_test,
+    )
