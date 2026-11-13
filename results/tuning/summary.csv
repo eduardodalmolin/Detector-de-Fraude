@@ -1,0 +1,5 @@
+model,pr_auc_padrao,pr_auc_otimizado,ganho
+Logistic Regression,0.7515,0.7518,0.0004
+Random Forest,0.8276,0.8366,0.009
+Isolation Forest,0.1507,0.2512,0.1005
+Hist Gradient Boosting,0.75,0.7943,0.0442
