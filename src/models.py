@@ -2,12 +2,41 @@
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import IsolationForest, RandomForestClassifier
+from sklearn.ensemble import (
+    HistGradientBoostingClassifier,
+    IsolationForest,
+    RandomForestClassifier,
+)
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
 
 SCALE_COLS = ["Time", "Amount"]
+
+# Preenchido manualmente com o resultado de `python -m src.tune`
+# (arquivo results/tuning/best_params.json). Vazio = hiperparâmetros padrão.
+BEST_PARAMS: dict = {
+  "Logistic Regression": {
+    "clf__C": 0.0745934328572655
+  },
+  "Random Forest": {
+    "clf__n_estimators": 300,
+    "clf__min_samples_leaf": 2,
+    "clf__max_features": 0.3,
+    "clf__max_depth": 16
+  },
+  "Isolation Forest": {
+    "clf__n_estimators": 100,
+    "clf__max_samples": 0.5
+  },
+  "Hist Gradient Boosting": {
+    "clf__l2_regularization": 0.0011299516083106617,
+    "clf__learning_rate": 0.2464598838968806,
+    "clf__max_depth": 5,
+    "clf__max_leaf_nodes": 31,
+    "clf__min_samples_leaf": 50
+  }
+}
 
 
 class IsolationForestClassifier(ClassifierMixin, BaseEstimator):
@@ -17,8 +46,10 @@ class IsolationForestClassifier(ClassifierMixin, BaseEstimator):
     maior probabilidade de uma observação ser anômala.
     """
 
-    def __init__(self, n_estimators=200, contamination=0.002, random_state=42, n_jobs=-1):
+    def __init__(self, n_estimators=200, max_samples="auto", contamination=0.002,
+                 random_state=42, n_jobs=-1):
         self.n_estimators = n_estimators
+        self.max_samples = max_samples
         self.contamination = contamination
         self.random_state = random_state
         self.n_jobs = n_jobs
@@ -29,6 +60,7 @@ class IsolationForestClassifier(ClassifierMixin, BaseEstimator):
 
         self.model_ = IsolationForest(
             n_estimators=self.n_estimators,
+            max_samples=self.max_samples,
             contamination=cont,
             random_state=self.random_state,
             n_jobs=self.n_jobs,
@@ -51,8 +83,8 @@ def _pipeline(estimator) -> Pipeline:
 
 
 def get_models(seed: int = 42) -> dict:
-    """Retorna os modelos a comparar. Adicione novos aqui!"""
-    return {
+    """Retorna os modelos a comparar, já com BEST_PARAMS aplicado."""
+    models = {
         "Logistic Regression": _pipeline(
             LogisticRegression(max_iter=1000, class_weight="balanced", random_state=seed)
         ),
@@ -63,4 +95,10 @@ def get_models(seed: int = 42) -> dict:
             )
         ),
         "Isolation Forest": _pipeline(IsolationForestClassifier(random_state=seed)),
+        "Hist Gradient Boosting": _pipeline(
+            HistGradientBoostingClassifier(class_weight="balanced", random_state=seed)
+        ),
     }
+    for name, params in BEST_PARAMS.items():
+        models[name].set_params(**params)
+    return models
