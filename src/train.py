@@ -5,6 +5,12 @@ Uso:
     python -m src.train --fast          # subamostra para testes rápidos
     python -m src.train --data caminho/creditcard.csv --folds 5
     python -m src.train --independent  # avaliação independente
+
+Balanceamento (imblearn, dentro do pipeline; só atua no treino):
+    python -m src.train --balance smote --results-dir results/smote --models-dir models/smote
+    python -m src.train --balance under --results-dir results/under --models-dir models/under
+    python -m src.train --balance smote_under --sampling-ratio 0.1 \\
+        --results-dir results/smote_under --models-dir models/smote_under
 """
 import argparse
 from pathlib import Path
@@ -27,7 +33,16 @@ from src.evaluate import (
     plot_confusion,
     plot_pr_curves,
 )
-from src.models import get_models
+from src.models import BALANCE_CHOICES, DEFAULT_SAMPLING_RATIO, get_models
+
+
+def build_models(args):
+    """Monta os modelos conforme as flags de balanceamento."""
+    return get_models(
+        args.seed,
+        balance=args.balance,
+        ratio=args.sampling_ratio,
+    )
 
 
 def run_independent_experiment(X, y, args):
@@ -44,7 +59,7 @@ def run_independent_experiment(X, y, args):
 
     rows, test_scores, fitted = [], {}, {}
 
-    for name, model in get_models(args.seed).items():
+    for name, model in build_models(args).items():
         print(f"\n== {name} ==")
 
         model.fit(X_train, y_train)
@@ -131,11 +146,29 @@ def main():
         action="store_true",
         help="executa avaliação com calibração e validação independentes",
     )
+    ap.add_argument(
+        "--balance",
+        choices=BALANCE_CHOICES,
+        default="none",
+        help="estratégia de balanceamento aplicada só ao treino (default: none = class_weight)",
+    )
+    ap.add_argument(
+        "--sampling-ratio",
+        type=float,
+        default=DEFAULT_SAMPLING_RATIO,
+        help="razão minoritária/majoritária após reamostrar (default: %(default)s)",
+    )
     args = ap.parse_args()
 
+    if args.balance != "none" and (args.results_dir == "results" or args.models_dir == "models"):
+        ap.error(
+            "com --balance, informe --results-dir e --models-dir próprios "
+            "(ex.: results/smote e models/smote) para não sobrescrever o baseline"
+        )
+
     results_dir, models_dir = Path(args.results_dir), Path(args.models_dir)
-    results_dir.mkdir(exist_ok=True)
-    models_dir.mkdir(exist_ok=True)
+    results_dir.mkdir(parents=True, exist_ok=True)
+    models_dir.mkdir(parents=True, exist_ok=True)
 
     df = load_data(args.data)
     if args.fast:
@@ -143,6 +176,10 @@ def main():
         print(f"[fast] subamostra com {len(df)} linhas")
     X, y = split_xy(df)
     print(f"{len(df)} transações | fraudes: {int(y.sum())} ({y.mean():.3%})")
+    print(
+        f"Balanceamento: {args.balance}"
+        + (f" (razão {args.sampling_ratio})" if args.balance != "none" else " (class_weight)")
+    )
 
     if args.independent:
         run_independent_experiment(X, y, args)
@@ -152,7 +189,7 @@ def main():
     cv = StratifiedKFold(n_splits=args.folds, shuffle=True, random_state=args.seed)
     rows, test_scores, fitted = [], {}, {}
 
-    for name, model in get_models(args.seed).items():
+    for name, model in build_models(args).items():
         print(f"\n== {name} ==")
 
         if name == "Isolation Forest":
@@ -240,7 +277,7 @@ def main():
         results_dir / "test_scores.csv", index=False
     )
     (results_dir / "best_model.txt").write_text(best)
-    print("Artefatos salvos em results/ e models/")
+    print(f"Artefatos salvos em {results_dir} e {models_dir}")
 
 
 if __name__ == "__main__":
